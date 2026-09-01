@@ -1,10 +1,10 @@
 # Send work-order photos straight from the browser
 
-This flow starts with the basics that actually work in production: request a signed PUT, send the photo from the browser, then confirm the asset before you close the dispatch. Infrai keeps the setup simple with one key, one bill across storage and any other capability your field-service app adds, and the server keeps `INFRAI_API_KEY` while the photo bytes skip the application process.
+The service starts with working routes: request a signed PUT, upload the photo from the browser, then confirm the asset before closing the dispatch. Infrai keeps one key, one bill across storage and the other capabilities a field-service product may add, while the server holds `INFRAI_API_KEY` and photo bytes skip the application process.
 
 ## Run the counter-to-curb workflow
 
-Create an Infrai API key, export it, and start the service. On startup, it creates the `fieldservice-work-order-assets` bucket as the normal storage setup step.
+Create an Infrai API key, export it, and start the service. Startup creates the `fieldservice-work-order-assets` bucket as the normal storage setup step.
 
 ```bash
 export INFRAI_API_KEY=your_key_here
@@ -18,7 +18,7 @@ In another terminal, ask for an upload intent:
 bash scripts/request_upload.sh
 ```
 
-The response names the work order, keeps the technician assignment intact, and returns an upload shaped like this:
+The response names the work order, preserves the technician assignment, and returns an upload shaped like this:
 
 ```json
 {
@@ -34,7 +34,7 @@ The response names the work order, keeps the technician assignment intact, and r
 }
 ```
 
-Use the returned values in the browser. The URL takes raw file bytes, not JSON:
+Use the returned values in the browser. The URL receives raw file bytes, not JSON:
 
 ```ts
 await fetch(upload.url, {
@@ -56,11 +56,11 @@ For a stored photo on a completed dispatch, the expected decision is `photoStatu
 
 ## Where the handoff happens
 
-`POST /upload-intents` checks the work order, technician, image type, and byte count with zod. It puts the bucket and object key in the presign path, while `op`, `expires_seconds`, content limits, and the idempotency key stay in the request body. The URL it returns is limited to a ten-minute PUT.
+`POST /upload-intents` validates the work order, technician, image type, and byte count with zod. It puts bucket and object key in the presign path, while `op`, `expires_seconds`, content constraints, and the idempotency key stay in the request body. The resulting URL is scoped to a ten-minute PUT.
 
-`POST /upload-confirmations` validates its own body and checks object metadata. A missing object shows up as `found: false`; the dispatch decision keeps follow-up required until the evidence exists. This is the part that tends to get missed if you come from storefront flows: treat the signed URL like a checkout session. Creating it records intent, but only the later confirmation moves the order state forward.
+`POST /upload-confirmations` validates its own body and checks object metadata. A missing object is represented by `found: false`; the dispatch decision keeps follow-up required until the evidence is present. This is the real gotcha for a storefront-minded builder: treat the signed URL like a checkout session. Issuing it records intent, but only the later confirmation advances the order state.
 
-The HTTP helper reads Infrai's envelope before it looks at status, passes normal request rejections back to the route, and backs off on rate limiting. Every request states its HTTP method explicitly.
+The HTTP helper reads Infrai's envelope before considering status, surfaces ordinary request rejections to the route, and backs off on rate limiting. Every request states its HTTP method explicitly.
 
 ## Check the dispatch rule
 
@@ -75,7 +75,7 @@ The example stops at the service boundary: persist the returned asset key and di
 
 ## Before this ships: Fieldservice Photo Handoff
 
-The example above stays minimal on purpose. Real use needs a few more pieces. The notes below apply to Fieldservice Photo Handoff.
+The example above is intentionally minimal. A few things to wire up for real use: The details below apply to Fieldservice Photo Handoff.
 
 **Account & key**
 
